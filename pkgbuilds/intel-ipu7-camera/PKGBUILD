@@ -2,7 +2,7 @@
 
 pkgname=intel-ipu7-camera
 pkgver=1.0.6
-pkgrel=1
+pkgrel=2
 pkgdesc="Intel IPU7 MIPI camera stack for Hurrican/Performance (OV08X40 + hardware ISP)"
 arch=('x86_64')
 url="https://github.com/TsaiGaggery/hurrican_omarchy_enabling"
@@ -42,10 +42,16 @@ _icamerasrc_commit="4fb31db76b618aae72184c59314b839dedb42689"
 # CSI2 receiver as an "Intel CVS" V4L2 bridge sub-device, provided by the
 # in-tree drivers/media/i2c/cvs driver. The legacy vision-drivers misc driver
 # has no such sub-device, so on 7.2 the sensor never joins the graph and the
-# HAL finds no camera. We ship the in-tree driver verbatim as a DKMS module
+# HAL finds no camera. We ship the in-tree driver as a DKMS module
 # for 7.2+ kernels (Arch-derived kernel configs cannot enable it: the option
 # is hidden behind MEDIA_HIDE_ANCILLARY_SUBDRV) and keep vision-drivers for
 # older kernels. Both dkms.conf files carry matching BUILD_EXCLUSIVE_KERNEL.
+#
+# 0007 is the upstream fix for the audio regression on the Dell XPS 14
+# DA14260: the driver requested its "wake" GPIO, which shares a pin with the
+# CS35L57 amplifiers' speaker-ID GpioIo, so every cs35l56 probe failed with
+# -EBUSY and the sound card never appeared. Drop it once the stable tag
+# fetched below contains the fix.
 _intel_cvs_kernel_tag="v7.2.5"
 _intel_cvs_url="https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/plain/drivers/media/i2c/cvs"
 
@@ -62,6 +68,7 @@ source=(
   "0003-icvs-set-rgbcamera_pwrup_host-0-for-Panther-Lake.patch"
   "0005-camhal-MediaControl-route-through-Intel-CVS-bridge.patch"
   "0006-camhal-ipu75xa-ov08x40-Intel-CVS-formats.patch"
+  "0007-media-i2c-cvs-get-the-wake-irq-without-claiming-the-gpio.patch"
   "dkms-ipu7-drivers.conf"
   "dkms-vision-drivers.conf"
   "dkms-intel-cvs.conf"
@@ -88,6 +95,7 @@ sha256sums=(
   'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP'
   'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP'
   'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP'
+  'SKIP'
 )
 
 prepare() {
@@ -105,6 +113,15 @@ prepare() {
   cd "${srcdir}/ipu7-camera-hal"
   patch -Np1 -i "${srcdir}/0005-camhal-MediaControl-route-through-Intel-CVS-bridge.patch"
   patch -Np1 -i "${srcdir}/0006-camhal-ipu75xa-ov08x40-Intel-CVS-formats.patch"
+
+  # Intel CVS: take the wake IRQ without claiming the GPIO (shared with the
+  # speaker-ID line on the XPS 14). makepkg symlinks plain downloads into
+  # srcdir and patch refuses to touch a symlink, so patch a real copy. The
+  # patch is against a/drivers/media/i2c/cvs/core.c, hence -p5.
+  cp --remove-destination "$(readlink -f "${srcdir}/intel-cvs-core.c")" \
+    "${srcdir}/intel-cvs-core.c"
+  patch -p5 -F0 --no-backup-if-mismatch "${srcdir}/intel-cvs-core.c" \
+    < "${srcdir}/0007-media-i2c-cvs-get-the-wake-irq-without-claiming-the-gpio.patch"
 
   # Stage proprietary libs/headers for build-time use
   local staging="${srcdir}/staging"

@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-only
 # Out-of-tree build of the in-tree Linux 7.2 Intel CVS driver
-# (drivers/media/i2c/cvs). Sources are unmodified kernel files.
+# (drivers/media/i2c/cvs). Sources are kernel files plus the upstream
+# wake-IRQ fix carried by the PKGBUILD.
 KERNELRELEASE ?= $(shell uname -r)
 KERNEL_SRC ?= /lib/modules/$(KERNELRELEASE)/build
 
