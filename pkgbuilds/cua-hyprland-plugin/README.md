@@ -1,27 +1,16 @@
 # Optional Cua Hyprland plugin
 
-This package targets **Omarchy stable x86_64**, with Inkscape `1.4.4-6` and
-two independent background-input lanes. Cua's native qualification is recorded
-in [the kit's qualification record](https://github.com/trycua/cua/releases/download/cua-hyprland-kit-v1.1.0-omarchy-stable-20260910/QUALIFICATION.md)
-and [Cua #3698](https://github.com/trycua/cua/pull/3698). Omabot replay and
-Omarchy's explicit merge, signing, and publication decisions remain required.
-Keep `skip_build: true` until those gates pass.
+This package targets **Omarchy stable x86_64**, with Inkscape `1.4.4-6` and two independent background-input lanes. Cua's native qualification is recorded in [the kit's qualification record](https://github.com/trycua/cua/releases/download/cua-hyprland-kit-v1.1.0-omarchy-stable-20260910/QUALIFICATION.md) and [Cua #3698](https://github.com/trycua/cua/pull/3698). Omabot replay and Omarchy's merge decision are recorded in [omarchy-pkgs #346](https://github.com/omacom/omarchy-pkgs/pull/346). Scheduling the recipe does not expand the qualified stable target.
 
-The plugin is optional. Cua Driver works independently, and installation does
-not load the plugin or enable input. Metadata restricts the initial destination
-to `channels: ["stable"]`; `release_ring: fast` permits a native package build.
-Edge, RC, and ARM publication are outside this initial scope.
+The plugin is optional. Cua Driver works independently, and installation does not load the plugin or enable input. The package follows the normal edge-to-RC-to-stable promotion path instead of the fast release ring. Its PKGBUILD limits builds to x86_64; only stable x86_64 is a qualified target.
 
 ## Source and build profile
 
 The package uses the [Driver 0.26.1 plugin source](https://github.com/trycua/cua/releases/tag/cua-driver-rs-v0.26.1),
 including the [desktop-fault cleanup repair](https://github.com/trycua/cua/pull/3702).
-It is not a repackaging of the unmodified 0.24.0 plugin. The Driver client
-intended for Omarchy publication is `cua-driver-bin 0.27.0-1`, with input
-protocol v3. Driver 0.27.0 contains the bounded stale-geometry retry validated
-with this pinned module; its production plugin source is unchanged from the
-source used here. Discovery protocol v2 is separate. Omarchy must still build,
-replay, sign, and publish that exact package pairing before rollout.
+It is not a repackaging of the unmodified 0.24.0 plugin.
+
+The qualified Driver pairing is `cua-driver-bin 0.27.0-1`, with input protocol v3. Driver 0.27.0 contains the bounded stale-geometry retry validated with this pinned module; its production plugin source is unchanged from the source used here. Discovery protocol v2 is separate. A newer Driver release is a changed pairing and requires affected replay before promotion.
 
 Profile `omarchy-stable-20260910`, kit `1.1.0`, and package release `2` pin:
 
@@ -69,9 +58,7 @@ released Driver binary SHA-256
 `bb1b65394e912246220f9f758c9efbbf6260cec16e3562e62a361fa95329377f`,
 and evidence SHA-256
 `b6c47278a3db398ecbb4d7aed2bce44a467e2af37e6d4ccfc236d1e07aa70af7`.
-Omarchy replay of the intended 0.27.0 package pairing remains an explicit
-merge gate. See the linked qualification record and PR description for exact
-artifacts and observation limits.
+See the linked qualification record and PR description for exact artifacts and observation limits. Omarchy replay of the 0.27.0 package pairing is recorded in #346; it does not qualify later Driver releases.
 
 Duplicate motion notifications are retained and counted. They are acceptable
 only when pointer identity, coordinates, focus, held input, and foreground
@@ -85,12 +72,12 @@ this profile. The plugin does not widen Driver's application admission.
 Foreground input, capture, and accessibility have separate contracts; a
 background refusal never authorizes a hidden foreground fallback or unlock.
 
-## Omabot replay before merge
+## Omabot replay before promotion
 
-Use the unsigned, explicitly scoped build command:
+Build the unsigned candidate in edge:
 
 ```sh
-bin/repo build --package cua-hyprland-plugin --arch x86_64 --mirror stable
+bin/repo build --package cua-hyprland-plugin --arch x86_64 --mirror edge
 ```
 
 In a fresh worker matching the reviewed profile:
@@ -106,6 +93,8 @@ In a fresh worker matching the reviewed profile:
    Omabot result; matching source alone does not certify different binaries.
 4. Verify restart-based upgrade, rollback, removal, and reinstallation. Retain
    evidence that binds each result to the package and mapped module bytes.
+
+After the exact package and Driver pairing passes, advance the signed artifact with `bin/repo advance --from edge --to rc --package cua-hyprland-plugin`, validate RC, and then use `bin/repo advance --from rc --to stable --package cua-hyprland-plugin`. Do not rebuild independently in RC or stable.
 
 Portable tests, screenshots, health reports, and a successful build do not
 replace native qualification. Recheck the published Driver package before
@@ -261,14 +250,6 @@ environment. Mirror/channel changes and changes to ABI dependencies, Driver,
 or admitted apps request a new candidate and affected qualification. They do
 not establish compatibility or authorize additional publication channels.
 
-`skip_build` controls selection, not publication authority. This package has no
-upstream polling, AUR synchronization, or automatic rebuild bump. After replay
-and explicit merge approval, the named Omarchy owner must deliberately sign
-and publish the validated bytes. `bin/repo release` rebuilds before publication;
-`push` and `upload-prebuilt` also publish. None supplies native qualification.
-Do not silently substitute newly rebuilt bytes during signing/publication.
+This package participates in scheduled builds, but has no upstream polling, AUR synchronization, or automatic rebuild bump. A checked-in version change or missing artifact can queue it for the normal release pipeline. Build selection, promotion, `push`, and `upload-prebuilt` do not supply native qualification or authorize a broader support claim. Do not silently substitute newly rebuilt bytes during signing or publication.
 
-Finally, install the signed published package on a fresh consumer, verify its
-signature and package/module digests, and perform a short activation,
-background-action, and cleanup smoke. Broader channels or unattended publishing
-require an enforced artifact-to-evidence gate, including prebuilt uploads.
+Before calling a release complete, install the signed published package on a fresh consumer, verify its signature and package/module digests, and perform a short activation, background-action, and cleanup smoke. Edge and RC artifacts are compatibility checkpoints, not qualified support for those environments.
