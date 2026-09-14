@@ -320,6 +320,20 @@ echo "  Skipped:        ${#SKIPPED_PACKAGES[@]} (up-to-date or excluded)"
 echo "  Failed:         ${#FAILED_PACKAGES[@]}"
 echo "  Blocked:        ${#BLOCKED_PACKAGES[@]}"
 
+# The release caller supplies a fresh directory. A completed result
+# distinguishes package failures from an interrupted/failed orchestrator;
+# only artifacts belonging to fully successful builds may be published.
+if [[ -n "${OMARCHY_BUILD_RESULT_DIR:-}" ]]; then
+  mkdir -p "$OMARCHY_BUILD_RESULT_DIR"
+  : > "$OMARCHY_BUILD_RESULT_DIR/artifacts"
+  for package in "${SUCCESSFUL_PACKAGES[@]}"; do
+    cat "$PLAN_DIR/artifacts/$package" >> "$OMARCHY_BUILD_RESULT_DIR/artifacts"
+  done
+  printf '%s\n' "${FAILED_PACKAGES[@]}" | sed '/^$/d' > "$OMARCHY_BUILD_RESULT_DIR/failed"
+  printf '%s\n' "${BLOCKED_PACKAGES[@]}" | sed '/^$/d' > "$OMARCHY_BUILD_RESULT_DIR/blocked"
+  touch "$OMARCHY_BUILD_RESULT_DIR/complete"
+fi
+
 if (( ${#FAILED_PACKAGES[@]} + ${#BLOCKED_PACKAGES[@]} )); then
   if (( ${#FAILED_PACKAGES[@]} )); then
     echo "Failed packages:"
@@ -330,7 +344,9 @@ if (( ${#FAILED_PACKAGES[@]} + ${#BLOCKED_PACKAGES[@]} )); then
     printf '  - %s\n' "${BLOCKED_PACKAGES[@]}"
   fi
   print_warning "Some packages failed (see details above)"
-  exit 1
+  # Reserved for a completed run with unsuccessful packages. Other failures
+  # must not let release publish arbitrary files left in the workspace.
+  exit 2
 fi
 
 print_success "Build completed successfully!"
