@@ -238,6 +238,9 @@ PACKAGE_CACHE_DIR="$BUILD_ROOT/cache/pacman/$MIRROR/$ARCH"
 mkdir -p "$PACKAGE_CACHE_DIR"
 PLAN_DIR=$(mktemp -d "$SRC_DIR/build-plan.XXXXXX")
 trap 'rm -rf "$PLAN_DIR"' EXIT
+# Keep manifest directories host-owned so cleanup also works when Docker's
+# builder uid differs from the caller (as on GitHub runners).
+mkdir -p "$PLAN_DIR/artifacts"
 
 # Rootful Docker writes as the image uid, so retain its existing permission
 # workaround. Rootless Podman uses keep-id and must leave ownership/modes alone.
