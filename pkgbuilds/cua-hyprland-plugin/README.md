@@ -12,11 +12,27 @@ It is not a repackaging of the unmodified 0.24.0 plugin.
 
 The qualified Driver pairing is `cua-driver-bin 0.27.0-1`, with input protocol v3. Driver 0.27.0 contains the bounded stale-geometry retry validated with this pinned module; its production plugin source is unchanged from the source used here. Discovery protocol v2 is separate. A newer Driver release is a changed pairing and requires affected replay before promotion.
 
-Profile `omarchy-stable-20260910`, kit `1.1.0`, and package release `2` pin:
+Profile `omarchy-hyprland-0562r3`, kit tooling `1.1.0`, and package release `3` pin:
 
-- Hyprland `0.56.2-2`, headers `0.56.2`, and measured executable/header hashes.
+- Hyprland `0.56.2-3`, headers `0.56.2`, and measured executable/header hashes.
 - GCC `16.2.1 20260810`, including compiler bytes and emitted ELF identity.
 - Shared runtime `libstdc++.so.6.0.36`, its bytes, and exact ABI package versions.
+
+This profile derives from Cua's `omarchy-stable-20260910` profile. Arch's
+Hyprland `-3` package splits out `hyprpm` and changes package dependencies;
+its compositor executable and all 498 header/pkg-config files are byte-identical
+to `-2`. Both executables have SHA-256
+`da8fcacf347bcbed83edc40108c6e2298da095e22246bd764e9bb382786cebb2`.
+The checked-in `PROFILE.json` changes only the profile name, package release,
+and exact Hyprland package version. Compiler, runtime, source, executable,
+and header identities remain unchanged. The download wrapper verifies the
+original kit before deriving the updated profile, recipe, and provenance,
+then verifies every derived member against its recorded digest.
+
+The native qualification below was recorded with package release `2` and
+Hyprland `-2`. This packaging update does not claim a new application or
+Driver replay. The `-3` dependency must reach a destination channel before
+this artifact can be installed there; publication still follows edge → RC → stable.
 
 The generated `PKGBUILD` identifies the immutable kit download, outer checksum,
 and member checksums. The kit records the full source and tooling revisions,
@@ -109,13 +125,13 @@ configuration edits, or hot replacement.
 
 Save your work and exit Hyprland before installing, replacing, or removing the
 package. Install the exact reviewed package from a text console, then start a
-fresh session. Before loading, run the consumer check with the independently
-reviewed kit-provenance digest from the qualification record:
+fresh session. Before loading, run the consumer check with this package's derived
+kit-provenance digest:
 
 ```sh
 python3 /usr/share/cua-hyprland-plugin/profile_verify.py \
   --kit /usr/share/cua-hyprland-plugin \
-  --kit-sha256 7beb736adfd334eed52e84070177634269e3a09f8bb25971b38606933ff4c997 \
+  --kit-sha256 1391084a903254fb16d251522dba41ae34a06cfa4b2f6b7ba91a3cceeb895921 \
   --consumer /usr/lib/cua/hyprland/cua-hyprland-plugin.so
 ```
 
