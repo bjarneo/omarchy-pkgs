@@ -1,15 +1,15 @@
 # Maintainer: Adrián Pérez de Castro
 pkgname=ttf-ia-writer
 pkgdesc='Subset of the fonts provided by iA Writer'
-pkgver=20181225
-pkgrel=2
+pkgver=20230616.r62
+pkgrel=1
 url=https://github.com/iaolo/iA-Fonts
 conflicts=(ttf-ia-writer-duospace)
 provides=(${conflicts[@]})
 license=(custom:OFL)
 arch=(any)
 
-_commit=b337fe1a4c93026268f70e4b2678371f3e89e2ce
+_commit=f32c04c3058a75d7ce28919ce70fe8800817491b
 _baseurl="${url}/raw/${_commit}/"
 # Duospace was removed upstream; retain the shipped legacy family at its last pin.
 _legacy_baseurl="${url}/raw/b337fe1a4c93026268f70e4b2678371f3e89e2ce/"
