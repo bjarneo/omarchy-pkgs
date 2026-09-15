@@ -9,8 +9,8 @@ case "${CARCH}" in
         _archdir="arm64"
         ;;
 esac
-pkgver=${_tarver//-/_}
-pkgrel=25.1
+pkgver=8.12.38_25.BETA
+pkgrel=25.2
 conflicts=('1password' '1password-beta-bin')
 pkgdesc="Password manager and secure wallet"
 arch=('x86_64' 'aarch64')
