@@ -1,0 +1,25 @@
+pkgbase = omaspeak-bin
+	pkgdesc = Local-first text-to-speech application and daemon (pre-built binary)
+	pkgver = 0.0.1.rc
+	pkgrel = 1
+	url = https://github.com/jacob-vincent-mink/omaspeak
+	install = omaspeak-bin.install
+	arch = x86_64
+	license = MIT
+	depends = alsa-utils
+	depends = bzip2
+	depends = gcc-libs
+	depends = glibc
+	optdepends = pipewire-audio: audio playback through pw-play
+	optdepends = openvino: Intel CPU acceleration runtime
+	optdepends = openvino-intel-gpu-plugin: Intel GPU device support for OpenVINO
+	optdepends = openvino-intel-npu-plugin: Intel NPU device support for OpenVINO
+	optdepends = cuda: NVIDIA CUDA libraries for an external CUDA runtime bundle
+	optdepends = cudnn: NVIDIA neural-network libraries for an external CUDA runtime bundle
+	provides = omaspeak=0.0.1.rc
+	conflicts = omaspeak
+	options = !strip
+	source = omaspeak-0.0.1-rc-linux-x86_64.tar.xz::https://github.com/jacob-vincent-mink/omaspeak/releases/download/v0.0.1-rc/omaspeak-0.0.1-rc-linux-x86_64.tar.xz
+	sha256sums = 49c1d0bc2954aad7865746d7edbbe81343ad3a1d33ff0dd6d21e0ecd3a26b115
+
+pkgname = omaspeak-bin

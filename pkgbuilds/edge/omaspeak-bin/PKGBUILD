@@ -1,0 +1,70 @@
+# Maintainer: Jacob Vincent Mink
+
+pkgname=omaspeak-bin
+_pkgname=${pkgname%-bin}
+pkgver=0.0.1.rc
+_upstream_ver=0.0.1-rc
+pkgrel=1
+pkgdesc='Local-first text-to-speech application and daemon (pre-built binary)'
+arch=('x86_64')
+url='https://github.com/jacob-vincent-mink/omaspeak'
+license=('MIT')
+depends=(
+    'alsa-utils'
+    'bzip2'
+    'gcc-libs'
+    'glibc'
+)
+optdepends=(
+    'pipewire-audio: audio playback through pw-play'
+    'openvino: Intel CPU acceleration runtime'
+    'openvino-intel-gpu-plugin: Intel GPU device support for OpenVINO'
+    'openvino-intel-npu-plugin: Intel NPU device support for OpenVINO'
+    'cuda: NVIDIA CUDA libraries for an external CUDA runtime bundle'
+    'cudnn: NVIDIA neural-network libraries for an external CUDA runtime bundle'
+)
+provides=("${_pkgname}=${pkgver}")
+conflicts=("${_pkgname}")
+install="${pkgname}.install"
+options=('!strip')
+
+source=("${_pkgname}-${_upstream_ver}-linux-x86_64.tar.xz::${url}/releases/download/v${_upstream_ver}/${_pkgname}-${_upstream_ver}-linux-x86_64.tar.xz")
+
+sha256sums=('49c1d0bc2954aad7865746d7edbbe81343ad3a1d33ff0dd6d21e0ecd3a26b115')
+
+package() {
+    local release_root="${srcdir}/${_pkgname}-${_upstream_ver}-linux-x86_64"
+
+    install -Dm755 "${release_root}/${_pkgname}" "${pkgdir}/usr/bin/${_pkgname}"
+
+    install -dm755 "${pkgdir}/usr/lib/${_pkgname}"
+    cp -a "${release_root}/lib/." "${pkgdir}/usr/lib/${_pkgname}/"
+
+    install -Dm644 \
+        "${release_root}/packaging/systemd/${_pkgname}.service" \
+        "${pkgdir}/usr/lib/systemd/user/${_pkgname}.service"
+
+    local document
+    for document in \
+        README.md \
+        INSTALL.md \
+        ACCELERATOR_SETUP.md \
+        CHANGELOG.md \
+        RELEASE_NOTES.md \
+        DEMO.md \
+        RUNTIME.md \
+        config.example.toml; do
+        install -Dm644 \
+            "${release_root}/${document}" \
+            "${pkgdir}/usr/share/doc/${pkgname}/${document}"
+    done
+    cp -a \
+        "${release_root}/assets" \
+        "${release_root}/benchmarks" \
+        "${pkgdir}/usr/share/doc/${pkgname}/"
+
+    install -dm755 "${pkgdir}/usr/share/licenses/${pkgname}"
+    install -m644 \
+        "${release_root}"/licenses/* \
+        "${pkgdir}/usr/share/licenses/${pkgname}/"
+}
