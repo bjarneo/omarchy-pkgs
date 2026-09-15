@@ -38,8 +38,13 @@ package() {
 
     install -Dm755 "${release_root}/${_pkgname}" "${pkgdir}/usr/bin/${_pkgname}"
 
-    install -dm755 "${pkgdir}/usr/lib/${_pkgname}"
-    cp -a "${release_root}/lib/." "${pkgdir}/usr/lib/${_pkgname}/"
+    install -Dm755 \
+        "${release_root}/lib/libaudiocpp.so.0.1.0" \
+        "${pkgdir}/usr/lib/${_pkgname}/libaudiocpp.so.0.1.0"
+    ln -s libaudiocpp.so.0.1.0 \
+        "${pkgdir}/usr/lib/${_pkgname}/libaudiocpp.so.0"
+    ln -s libaudiocpp.so.0 \
+        "${pkgdir}/usr/lib/${_pkgname}/libaudiocpp.so"
 
     install -Dm644 \
         "${release_root}/packaging/systemd/${_pkgname}.service" \
@@ -59,13 +64,13 @@ package() {
             "${release_root}/${document}" \
             "${pkgdir}/usr/share/doc/${pkgname}/${document}"
     done
-    cp -a \
+    cp -r \
         "${release_root}/assets" \
         "${release_root}/benchmarks" \
         "${pkgdir}/usr/share/doc/${pkgname}/"
 
     install -dm755 "${pkgdir}/usr/share/licenses/${pkgname}"
-    install -m644 \
-        "${release_root}"/licenses/* \
+    cp -r \
+        "${release_root}/licenses/." \
         "${pkgdir}/usr/share/licenses/${pkgname}/"
 }
