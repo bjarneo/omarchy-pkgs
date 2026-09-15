@@ -88,13 +88,8 @@ build() {
     -DOBS_VERSION_OVERRIDE="$pkgver"
     -DOBS_COMPILE_DEPRECATION_AS_WARNING=ON
 
-    # Arch ships mbedtls 3 side-by-side under /usr/lib/mbedtls3, and OBS's
-    # finder needs to be pointed at it (same paths the AUR pkgbases use).
+    # Use Arch's side-by-side MbedTLS 3 CMake configuration.
     -DMbedTLS_DIR=/usr/lib/mbedtls3/cmake/MbedTLS
-    -DMbedTLS_INCLUDE_DIR=/usr/include/mbedtls3
-    -DMbedtls_LIBRARY=/usr/lib/mbedtls3/libmbedtls.so
-    -DMbedcrypto_LIBRARY=/usr/lib/mbedtls3/libmbedcrypto.so
-    -DMbedx509_LIBRARY=/usr/lib/mbedtls3/libmbedx509.so
 
     -Wno-dev
   )
