@@ -1,6 +1,6 @@
 pkgbase = omawake-bin
 	pkgdesc = Configurable local wake-word daemon (pre-built binary)
-	pkgver = 0.0.1.rc
+	pkgver = 0.0.1.rc.2
 	pkgrel = 1
 	url = https://github.com/jacob-vincent-mink/omawake
 	install = omawake-bin.install
@@ -16,10 +16,10 @@ pkgbase = omawake-bin
 	optdepends = openvino-intel-npu-plugin: Intel NPU device support for OpenVINO
 	optdepends = cuda: NVIDIA CUDA libraries for an external CUDA runtime bundle
 	optdepends = cudnn: NVIDIA neural-network libraries for an external CUDA runtime bundle
-	provides = omawake=0.0.1.rc
+	provides = omawake=0.0.1.rc.2
 	conflicts = omawake
 	options = !strip
-	source = omawake-0.0.1-rc-linux-x86_64.tar.xz::https://github.com/jacob-vincent-mink/omawake/releases/download/v0.0.1-rc/omawake-0.0.1-rc-linux-x86_64.tar.xz
-	sha256sums = 52441cefcee285e6941fa25bc45770dc628391f0dd035260509e5cb47c0eeb15
+	source = omawake-0.0.1-rc.2-linux-x86_64.tar.xz::https://github.com/jacob-vincent-mink/omawake/releases/download/v0.0.1-rc.2/omawake-0.0.1-rc.2-linux-x86_64.tar.xz
+	sha256sums = 198b4a85b3760f024e088c7b45d5bf85c9eb4f000de0b33aa064b33a860b1acc
 
 pkgname = omawake-bin
