@@ -11,7 +11,7 @@ license=('GPL-2.0-or-later')
 depends=('dkms')
 source=(${_pkgbase}-${pkgver}.zip::'https://www.motor-comm.com/Cn/Skippower/downloadFile.html?id=1817'
         'patch.diff')
-sha256sums=('877e6953fc6eb47232a74e47b0daf33de0e7f9e9a395d3bc10d500d3c4150af8' '6cdb77774c483b640c8f0499fd54a79e773cd3f96a426cd99eec385972d9d5bb')
+sha256sums=('877e6953fc6eb47232a74e47b0daf33de0e7f9e9a395d3bc10d500d3c4150af8' '597cbcefe2c3f426a20b089b1a24f7bfcaffe81bdfe1bd2c789c9228b3b5708e')
 
 prepare() {
   cd ${srcdir}
