@@ -9,7 +9,6 @@ url="https://github.com/TsaiGaggery/hurrican_omarchy_enabling"
 license=('GPL-2.0-or-later')
 depends=(
   'dkms'
-  'linux-omarchy-headers'
   'v4l2loopback-dkms'
   'v4l2-relayd'
   'gstreamer'
