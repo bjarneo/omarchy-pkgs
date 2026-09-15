@@ -2,8 +2,8 @@
 
 pkgname=omaspeak-bin
 _pkgname=${pkgname%-bin}
-pkgver=0.0.1.rc.3
-_upstream_ver=0.0.1-rc.3
+pkgver=0.0.1
+_upstream_ver=0.0.1
 pkgrel=1
 pkgdesc='Local-first text-to-speech application and daemon (pre-built binary)'
 arch=('x86_64' 'aarch64')
@@ -30,8 +30,8 @@ options=('!strip')
 source_x86_64=("${_pkgname}-${_upstream_ver}-linux-x86_64.tar.xz::${url}/releases/download/v${_upstream_ver}/${_pkgname}-${_upstream_ver}-linux-x86_64.tar.xz")
 source_aarch64=("${_pkgname}-${_upstream_ver}-linux-aarch64.tar.xz::${url}/releases/download/v${_upstream_ver}/${_pkgname}-${_upstream_ver}-linux-aarch64.tar.xz")
 
-sha256sums_x86_64=('7a78ee95d65905f29bae1ba3e00b873d268d03eaf27479f8a89d7fffc860dbb0')
-sha256sums_aarch64=('20723aac60195ed1f23b894c16dbb3fad67bf53baa1d5b6c8f1eb4e496f0690f')
+sha256sums_x86_64=('9e318960fb15fdf955efbb8dda9bc8eb2b9d0932a9acd9e31b85bf3492ca78ea')
+sha256sums_aarch64=('8a0d7728d0b6d3f447ab7a616389fc8c54a0617f14922b33593ca60b425deb8d')
 
 package() {
     local release_root="${srcdir}/${_pkgname}-${_upstream_ver}-linux-${CARCH}"
