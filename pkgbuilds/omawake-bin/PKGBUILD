@@ -6,12 +6,11 @@ pkgver=0.0.1.rc.2
 _upstream_ver=0.0.1-rc.2
 pkgrel=1
 pkgdesc='Configurable local wake-word daemon (pre-built binary)'
-arch=('x86_64')
+arch=('x86_64' 'aarch64')
 url='https://github.com/jacob-vincent-mink/omawake'
 license=('MIT')
 depends=(
     'alsa-lib'
-    'bzip2'
     'gcc-libs'
     'glibc'
 )
@@ -28,12 +27,14 @@ conflicts=("${_pkgname}")
 install="${pkgname}.install"
 options=('!strip')
 
-source=("${_pkgname}-${_upstream_ver}-linux-x86_64.tar.xz::${url}/releases/download/v${_upstream_ver}/${_pkgname}-${_upstream_ver}-linux-x86_64.tar.xz")
+source_x86_64=("${_pkgname}-${_upstream_ver}-linux-x86_64.tar.xz::${url}/releases/download/v${_upstream_ver}/${_pkgname}-${_upstream_ver}-linux-x86_64.tar.xz")
+source_aarch64=("${_pkgname}-${_upstream_ver}-linux-aarch64.tar.xz::${url}/releases/download/v${_upstream_ver}/${_pkgname}-${_upstream_ver}-linux-aarch64.tar.xz")
 
-sha256sums=('198b4a85b3760f024e088c7b45d5bf85c9eb4f000de0b33aa064b33a860b1acc')
+sha256sums_x86_64=('198b4a85b3760f024e088c7b45d5bf85c9eb4f000de0b33aa064b33a860b1acc')
+sha256sums_aarch64=('56d1a0944efa2bef7ac6049e9abaedb91de6dfd5bfc3a24f93d0964c88600118')
 
 package() {
-    local release_root="${srcdir}/${_pkgname}-${_upstream_ver}-linux-x86_64"
+    local release_root="${srcdir}/${_pkgname}-${_upstream_ver}-linux-${CARCH}"
 
     install -Dm755 "${release_root}/${_pkgname}" "${pkgdir}/usr/bin/${_pkgname}"
 

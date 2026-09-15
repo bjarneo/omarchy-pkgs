@@ -5,9 +5,9 @@ pkgbase = omaspeak-bin
 	url = https://github.com/jacob-vincent-mink/omaspeak
 	install = omaspeak-bin.install
 	arch = x86_64
+	arch = aarch64
 	license = MIT
 	depends = alsa-utils
-	depends = bzip2
 	depends = gcc-libs
 	depends = glibc
 	optdepends = pipewire-audio: audio playback through pw-play
@@ -19,7 +19,9 @@ pkgbase = omaspeak-bin
 	provides = omaspeak=0.0.1.rc.2
 	conflicts = omaspeak
 	options = !strip
-	source = omaspeak-0.0.1-rc.2-linux-x86_64.tar.xz::https://github.com/jacob-vincent-mink/omaspeak/releases/download/v0.0.1-rc.2/omaspeak-0.0.1-rc.2-linux-x86_64.tar.xz
-	sha256sums = ed247a8aaef6d18c9d134af902a6248b56ea439aebdb1e838eeda8f741e5a503
+	source_x86_64 = omaspeak-0.0.1-rc.2-linux-x86_64.tar.xz::https://github.com/jacob-vincent-mink/omaspeak/releases/download/v0.0.1-rc.2/omaspeak-0.0.1-rc.2-linux-x86_64.tar.xz
+	sha256sums_x86_64 = ed247a8aaef6d18c9d134af902a6248b56ea439aebdb1e838eeda8f741e5a503
+	source_aarch64 = omaspeak-0.0.1-rc.2-linux-aarch64.tar.xz::https://github.com/jacob-vincent-mink/omaspeak/releases/download/v0.0.1-rc.2/omaspeak-0.0.1-rc.2-linux-aarch64.tar.xz
+	sha256sums_aarch64 = 4a766ddc1218f48ed0622c96c4c93b2553e7a962b5d1ba766a301b1f29a4da3b
 
 pkgname = omaspeak-bin
