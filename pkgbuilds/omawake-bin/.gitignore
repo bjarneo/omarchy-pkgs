@@ -1,7 +1,0 @@
-*
-!.gitignore
-!.SRCINFO
-!PKGBUILD
-!omawake-bin.install
-!.omarchy/
-!.omarchy/package.json
