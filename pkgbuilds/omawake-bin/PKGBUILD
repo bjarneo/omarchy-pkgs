@@ -8,7 +8,7 @@ pkgrel=1
 pkgdesc='Configurable local wake-word daemon (pre-built binary)'
 arch=('x86_64' 'aarch64')
 url='https://github.com/jacob-vincent-mink/omawake'
-license=('MIT')
+license=('MIT' 'Apache-2.0' 'BSD-3-Clause')
 depends=(
     'alsa-lib'
     'gcc-libs'

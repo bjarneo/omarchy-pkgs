@@ -8,7 +8,7 @@ pkgrel=1
 pkgdesc='Local-first text-to-speech application and daemon (pre-built binary)'
 arch=('x86_64' 'aarch64')
 url='https://github.com/jacob-vincent-mink/omaspeak'
-license=('MIT')
+license=('MIT' 'Apache-2.0' 'BSD-3-Clause')
 depends=(
     'alsa-utils'
     'gcc-libs'
