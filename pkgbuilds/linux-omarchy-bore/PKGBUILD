@@ -83,6 +83,7 @@ source=(
   0313-fuse-background-wakeup.patch{,.sig}
   0350-drm-edid-populate-monitor-range-from-displayid-adaptive-sync.patch{,.sig}
   0360-gpu-mem-cgroup.patch{,.sig}
+  0361-drm-ttm-swapped-out-resource-leaves-bulk-move.patch{,.sig}
   0400-drm-i915-alpm-limit-pr-alpm-to-panel-replay.patch{,.sig}
   0401-drm-i915-psr-exit-panel-replay-for-alpm-lag.patch{,.sig}
   0402-psr2-early-transport-panels.patch{,.sig}
@@ -218,6 +219,8 @@ b2sums=('48551bee71cd02815136fb8abe7da4464c2e17c89ef35cb0c0530c8b969fe12127ca97a
         '1b340a502dcf5a1680caf5320b3aa72aa4317e4cf1d877c1f6425e281a5668d5f092417e1f282371c0a211344f5c187fb3bdaf3f97c7e122951edf7e4c08ca58'
         'SKIP'
         '1124c5c3fd5104c886c841ead1ae9afb42683388b640b1a86523dad9919c6bd59a1f78b07ee5a213e0dca77c636a29676af0592d4ed1735ea35f282f6f23e46f'
+        'SKIP'
+        '15855e9c28cb0abaab7ab606904dfc84d426ccab44edae59f0e1f092202b80525929f8d394d04ca1513d1d5dfc2cfc108a66a9c1cb42b9966c6417562ef20689'
         'SKIP'
         '505bf01a9d6b0926b557b673bb686d1a4ff73ee70539991e52272fbf58aad3ea25cf5ffc5c2d094a2d5e78b18a1a134f2ab530f595073a2d3eba9ff2c1418e1e'
         'SKIP'
@@ -407,6 +410,8 @@ sha256sums=('55ddf0df8325d9dad96fcff7bd93977d22e3f50af06527572af59b77c7632b78'
             '5cc215215fed4247c2d6b9732deff586331a07d54c3b00538a81921093a3a1a1'
             'SKIP'
             'e303da14a3c8a15fd1cb45394138f03dd16e66d2ac0d1ebcd933977df937d771'
+            'SKIP'
+            '503eba8d7a80b978fccdaac798f57cbb6cd2b2b04fd04c46399daa004b6646dc'
             'SKIP'
             '1f0c958b64ba48b8dc8b5548e1ad1934b8d4903fc16fec15014759e3681ea275'
             'SKIP'
