@@ -25,7 +25,7 @@ optdepends=(
 provides=("${_pkgname}=${pkgver}")
 conflicts=("${_pkgname}")
 install="${pkgname}.install"
-options=('!strip')
+options=('!strip' '!debug')
 
 source_x86_64=("${_pkgname}-${_upstream_ver}-linux-x86_64.tar.xz::${url}/releases/download/v${_upstream_ver}/${_pkgname}-${_upstream_ver}-linux-x86_64.tar.xz")
 source_aarch64=("${_pkgname}-${_upstream_ver}-linux-aarch64.tar.xz::${url}/releases/download/v${_upstream_ver}/${_pkgname}-${_upstream_ver}-linux-aarch64.tar.xz")
