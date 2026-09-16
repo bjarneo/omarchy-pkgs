@@ -1,6 +1,6 @@
 # Optional Cua Hyprland plugin
 
-This package targets **Omarchy stable x86_64**, with Inkscape `1.4.4-6` and two independent background-input lanes. Package release `4` adds an Omarchy patch for independent agent keymaps and operation-specific foreground checks; the upstream native qualification below covers the unpatched source, not this change. Cua's native qualification is recorded in [the kit's qualification record](https://github.com/trycua/cua/releases/download/cua-hyprland-kit-v1.1.0-omarchy-stable-20260910/QUALIFICATION.md) and [Cua #3698](https://github.com/trycua/cua/pull/3698). Omabot replay and Omarchy's merge decision are recorded in [omarchy-pkgs #346](https://github.com/omacom/omarchy-pkgs/pull/346). Scheduling the recipe does not expand the qualified stable target.
+This package targets **Omarchy stable x86_64**, with Inkscape `1.4.4-6` and two independent background-input lanes. Package release `5` includes the Omarchy patch for independent agent keymaps, operation-specific foreground checks, and compatible Num Lock state; the upstream native qualification below covers the unpatched source, not this change. Cua's native qualification is recorded in [the kit's qualification record](https://github.com/trycua/cua/releases/download/cua-hyprland-kit-v1.1.0-omarchy-stable-20260910/QUALIFICATION.md) and [Cua #3698](https://github.com/trycua/cua/pull/3698). Omabot replay and Omarchy's merge decision are recorded in [omarchy-pkgs #346](https://github.com/omacom/omarchy-pkgs/pull/346). Scheduling the recipe does not expand the qualified stable target.
 
 The plugin is optional. Cua Driver works independently, and installation does not load the plugin or enable input. The package follows the normal edge-to-RC-to-stable promotion path instead of the fast release ring. Its PKGBUILD limits builds to x86_64; only stable x86_64 is a qualified target.
 
@@ -12,7 +12,7 @@ It is not a repackaging of the unmodified 0.24.0 plugin.
 
 The qualified upstream Driver pairing is `cua-driver-bin 0.27.0-1`, with input protocol v3. Driver 0.27.0 contains the bounded stale-geometry retry validated with the upstream module; its production plugin source is the base for the downstream patch used here. Discovery protocol v2 is separate. A newer Driver release is a changed pairing and requires affected replay before promotion.
 
-Profile `omarchy-hyprland-0562r3-remaps`, kit tooling `1.1.0`, and package release `4` pin:
+Profile `omarchy-hyprland-0562r3-remaps`, kit tooling `1.1.0`, and package release `5` pin:
 
 - Hyprland `0.56.2-3`, headers `0.56.2`, and measured executable/header hashes.
 - GCC `16.2.1 20260810`, including compiler bytes and emitted ELF identity.
@@ -54,7 +54,9 @@ Each background lane owns a canonical US keymap and independent modifier state. 
 
 Plain click, scroll, drag, and foreground activation do not require a canonical keyboard layout. Foreground keys still use the primary seat: the plugin checks the requested key and modifier sequence against its actual XKB map before activation or input. Unrelated remaps are accepted; a sequence whose symbols or modifier/lock transitions differ from the canonical meaning is refused with `unsupported_layout`. Arbitrary foreground layout translation remains outside protocol v3.
 
-Both routes retain target/conflict checks and cancellation on desktop/keymap changes. `hyprctl -j cua:status` exposes `keyboard_layout_independent: true` for installers to distinguish this implementation from an older mapped module. The marker does not identify every future package revision; plugin updates still require a fresh desktop session.
+Foreground typing preserves Num Lock and admits a requested key sequence only when its symbols and shortcut semantics still match the canonical meaning. Num Lock does not block unaffected letters, top-row digits, Enter, or compatible shortcuts; a keypad sequence whose meaning changes is refused. Caps Lock, other unsupported lock states, held or latched modifiers, and nonzero layout groups remain guarded.
+
+Both routes retain target/conflict checks and cancellation on desktop/keymap changes. `hyprctl -j cua:status` exposes `keyboard_layout_independent: true` and `foreground_numlock_compatible: true` for installers to distinguish this implementation from an older mapped module. The marker does not identify every future package revision; plugin updates still require a fresh desktop session.
 
 ## Historical upstream qualification
 
@@ -102,7 +104,7 @@ background refusal never authorizes a hidden foreground fallback or unlock.
 Build the unsigned candidate in edge:
 
 ```sh
-bin/repo build --package cua-hyprland-plugin --arch x86_64 --mirror edge
+./bin/build --package cua-hyprland-plugin --arch x86_64 --mirror edge
 ```
 
 In a fresh worker matching the reviewed profile:
@@ -140,7 +142,7 @@ kit-provenance digest:
 ```sh
 python3 /usr/share/cua-hyprland-plugin/profile_verify.py \
   --kit /usr/share/cua-hyprland-plugin \
-  --kit-sha256 aa88498fc9635e493a64aaf4e2a08cdb5249d576d7e00c3cf100799d5c9f23f2 \
+  --kit-sha256 089f447e11cacd8c2d3d6cd56528776417c51d353b9677c47c42bba1ef79c9f9 \
   --consumer /usr/lib/cua/hyprland/cua-hyprland-plugin.so
 ```
 
@@ -172,7 +174,7 @@ hyprctl reload
 hyprctl -j cua:status
 ```
 
-Continue only when status reports `keyboard_layout_independent: true`, input protocol v3, input capability, socket paths, and the expected compositor identity. Do not change `kb_layout`, `kb_options`, or NumLock for background input. If you previously followed the stock-US override instructions, remove only that Cua-specific override and reload to restore your underlying personal settings.
+Continue only when status reports `keyboard_layout_independent: true`, `foreground_numlock_compatible: true`, input protocol v3, input capability, socket paths, and the expected compositor identity. Do not change `kb_layout`, `kb_options`, or NumLock for background input. If you previously followed the stock-US override instructions, remove only that Cua-specific override and reload to restore your underlying personal settings.
 
 Start Driver with `CUA_DRIVER_RS_ENABLE_WAYLAND=1`. In a new disposable Inkscape document, test an admitted background key operation and pointer operation, then verify the result in both a fresh snapshot and a saved/reopened SVG. Driver text-route restrictions still apply. Never test against an existing document or automatically replay an action with a partial or unknown outcome.
 

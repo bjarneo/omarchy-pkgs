@@ -12,7 +12,7 @@
     "sha256": "da8fcacf347bcbed83edc40108c6e2298da095e22246bd764e9bb382786cebb2"
   },
   "kit_version": "1.1.0",
-  "package_release": 4,
+  "package_release": 5,
   "profile_id": "omarchy-hyprland-0562r3-remaps",
   "runtime": {
     "basename": "libstdc++.so.6.0.36",
