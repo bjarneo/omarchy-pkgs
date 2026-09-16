@@ -3,7 +3,7 @@
 
 pkgbase=linux-omarchy
 pkgver=7.2.5
-pkgrel=3
+pkgrel=4
 pkgdesc='Omarchy Linux'
 url='https://omarchy.org'
 arch=(
