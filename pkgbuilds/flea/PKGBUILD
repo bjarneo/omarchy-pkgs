@@ -15,7 +15,10 @@ depends=(
   'glib2'
   'glibc'
   'gvfs'
+  'gvfs-afc'
   'gvfs-dnssd'
+  'gvfs-gphoto2'
+  'gvfs-mtp'
   'gvfs-nfs'
   'gvfs-smb'
   'hicolor-icon-theme'
@@ -28,6 +31,7 @@ depends=(
   'qt6-multimedia'
   'qt6-webengine'
   'shared-mime-info'
+  'usbmuxd'
   'util-linux'
   'wl-clipboard'
   'xdg-terminal-exec'
@@ -158,6 +162,9 @@ package() {
 
   install -Dm644 ui/qmldir ui/*.qml -t "$pkgdir/usr/share/flea/ui"
   install -Dm644 ui/js/*.js -t "$pkgdir/usr/share/flea/ui/js"
+  # Flea's Shelf setting installs this plugin into the user's plugin directory.
+  install -Dm644 shelf/manifest.json shelf/README.md shelf/*.qml shelf/*.js \
+    -t "$pkgdir/usr/share/flea/shelf"
   ln -s /usr/share/omarchy/shell/Commons "$pkgdir/usr/share/flea/ui/Commons"
   ln -s /usr/share/omarchy/shell/Ui "$pkgdir/usr/share/flea/ui/Ui"
 }
