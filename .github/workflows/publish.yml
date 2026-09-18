@@ -277,17 +277,6 @@ jobs:
             "Commit " + .commit[0:7] + " · [run](" + .run + ")"
           ' publish-record.json > comment.md
           cat comment.md
-      - name: Comment on the merged PR
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          pr=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" --jq '.[0].number // empty')
-          if [[ -n "$pr" ]]; then
-            gh pr comment "$pr" -R "${{ github.repository }}" --body-file comment.md
-            echo "commented on #$pr"
-          else
-            echo "no PR for ${{ github.sha }} (manual dispatch?); skipping PR comment"
-          fi
       - name: Append to the publish log in the bucket
         env:
           RCLONE_CONFIG_R2_TYPE: s3
@@ -305,6 +294,21 @@ jobs:
           ./rclone copyto publish-log.jsonl R2:omarchy-pkgs/publish-log.jsonl --s3-no-head
           echo "log now has $(wc -l < publish-log.jsonl) entries"
 
+      - name: Comment on the merged PR
+        # Only for a push: the merge commit names its PR. A dispatch runs
+        # from master's head, whose PR merged something else entirely, so
+        # commenting there would attach this run's report to the wrong PR.
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pr=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" --jq '.[0].number // empty')
+          if [[ -n "$pr" ]]; then
+            gh pr comment "$pr" -R "${{ github.repository }}" --body-file comment.md
+            echo "commented on #$pr"
+          else
+            echo "no PR for ${{ github.sha }} (manual dispatch?); skipping PR comment"
+          fi
   result:
     needs: [changes, publish]
     if: always()
