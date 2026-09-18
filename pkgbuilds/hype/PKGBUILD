@@ -1,0 +1,42 @@
+# Maintainer: David Heinemeier Hansson <david@hey.com>
+
+pkgname=hype
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='Simple Markdown presentations with a visual slide editor'
+arch=('x86_64' 'aarch64')
+url='https://github.com/omacom/hype'
+license=('MIT')
+install='hype.install'
+options=('!debug')
+depends=(
+  'ffmpeg'
+  'hicolor-icon-theme'
+  'qt6-base>=6.8'
+  'qt6-declarative>=6.8'
+  'qt6-multimedia'
+  'qt6-svg'
+  'source-highlight'
+  'zlib'
+  'xdg-desktop-portal'
+)
+makedepends=('gcc' 'git' 'make')
+# Pin the source until a tagged release is available.
+_commit=34475b239d0dacb6918f43734bb5557b624555e2
+source=("git+$url.git#commit=$_commit")
+sha256sums=('SKIP')
+
+build() {
+  cd "$srcdir/$pkgname"
+  ./bin/build
+}
+
+package() {
+  cd "$srcdir/$pkgname"
+
+  install -Dm755 build/hype "$pkgdir/usr/bin/hype"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 pkgbuild/hype.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/hype.svg"
+  install -Dm644 pkgbuild/hype.desktop "$pkgdir/usr/share/applications/hype.desktop"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+}
