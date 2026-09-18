@@ -48,6 +48,13 @@ jobs:
         run: |
           git fetch --no-tags --depth=1 origin "${{ github.event.pull_request.head.sha }}"
           git checkout "${{ github.event.pull_request.head.sha }}" -- pkgbuilds/
+          # Bootstrap: the PR that introduces this tooling has a base without
+          # it. Take the plan helper from the PR head in that one case; it
+          # runs on a hosted runner and only prints a plan.
+          if [[ ! -x bin/build-matrix ]]; then
+            git checkout "${{ github.event.pull_request.head.sha }}" -- bin/build-matrix helpers/
+            echo "::notice::base branch has no bin/build-matrix; using the PR's copy for planning"
+          fi
       - id: vouch
         if: github.event_name == 'pull_request'
         uses: mitchellh/vouch/action/check-user@f23dbb5e745334f97414ec70463ce7301071a661 # v1
