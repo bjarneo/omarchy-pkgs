@@ -2,7 +2,7 @@
 
 pkgname=hype
 pkgver=0.1.0
-pkgrel=2
+pkgrel=3
 pkgdesc='Simple Markdown presentations with a visual slide editor'
 arch=('x86_64' 'aarch64')
 url='https://github.com/omacom/hype'
@@ -19,14 +19,15 @@ depends=(
   'qt6-svg'
   'source-highlight'
   'zlib'
+  'libwebp'
   'xdg-desktop-portal'
 )
 makedepends=('gcc' 'git' 'make')
 # Pin the source until a tagged release is available.
-_commit=204d22c39deaeeeda75d8c90ee011bb53053f524
+_commit=f54cec61f5932f0ebb7659273b9a7de0fed64054
 source=("git+$url.git#commit=$_commit")
 # makepkg hashes git archive --format tar of the pinned commit.
-sha256sums=('c99441b1494f313b3912a3098c5fab5ff339488f0ed68df15447c87aa450374f')
+sha256sums=('017d08f590bf835d94ea95a3856d6c73d64ea72f7eeb6c21d417a8bd23c990a1')
 
 build() {
   cd "$srcdir/$pkgname"
