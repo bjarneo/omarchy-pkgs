@@ -154,20 +154,107 @@ jobs:
 
           # Deterministic slot order: edge before rc before stable, x86_64
           # before aarch64, so a failure leaves the earlier rings consistent.
+          # Every slot's outcome goes into publish-record.json for the report
+          # job: what was published, where, from which artifact, and whether
+          # the slot succeeded. A failing slot stops the loop (set -e) but the
+          # record still shows everything before it landed.
+          : > slots.jsonl
+          record_slot() { jq -nc --arg m "$1" --arg a "$2" --arg st "$3" --arg files "$4" \
+            '{mirror:$m, arch:$a, status:$st, packages:[$files | split(" ") | .[] | select(length>0) | sub(".*/";"") | sub("\\.pkg\\.tar\\.zst$";"")]}' >> slots.jsonl; }
+          status=0
           for mirror in edge rc stable; do
             for parch in x86_64 aarch64; do
               files=${slot_files["$mirror/$parch"]:-}
               [[ -n "$files" ]] || continue
               echo "==> $mirror/$parch: $files"
-              docker run --rm \
+              if docker run --rm \
                 -e GPG_PRIVATE_KEY -e GPG_PASSPHRASE -e OMARCHY_PUBLISH_PREFIX \
                 -e RCLONE_CONFIG_R2_TYPE -e RCLONE_CONFIG_R2_PROVIDER -e RCLONE_CONFIG_R2_ENDPOINT -e RCLONE_CONFIG_R2_NO_CHECK_BUCKET \
                 -e RCLONE_CONFIG_R2_ACCESS_KEY_ID -e RCLONE_CONFIG_R2_SECRET_ACCESS_KEY \
                 -v "$PWD:/w:ro" -w /w \
                 omarchy-pkg-builder:latest-x86_64-edge \
-                bin/publish-artifact --remote R2:omarchy-pkgs --mirror "$mirror" --arch "$parch" $files
+                bin/publish-artifact --remote R2:omarchy-pkgs --mirror "$mirror" --arch "$parch" $files; then
+                record_slot "$mirror" "$parch" published "$files"
+              else
+                record_slot "$mirror" "$parch" failed "$files"
+                status=1
+                break 2
+              fi
             done
           done
+          jq -n --arg sha "${{ github.sha }}" --arg run "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg prefix "${OMARCHY_PUBLISH_PREFIX:-}" --arg event "${{ github.event_name }}" \
+            --slurpfile slots slots.jsonl --slurpfile plan <(jq -c '.include[]' <<<'${{ needs.changes.outputs.matrix }}' | jq -sc .) \
+            '{time: (now|todate), commit:$sha, run:$run, event:$event, target: (if $prefix=="" then "live" else $prefix end), plan:$plan[0], slots:$slots}' \
+            > publish-record.json
+          cat publish-record.json
+          exit $status
+
+      - name: Keep the publish record
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: publish-record-${{ github.run_id }}
+          path: publish-record.json
+          retention-days: 90
+
+  # Tell people what happened. A comment on the merged PR (found by the
+  # merge commit, so squash and rebase merges work too) and a line appended
+  # to a running JSON log in the bucket, next to the packages it describes,
+  # so the history is public and can be rendered later.
+  report:
+    needs: [changes, publish]
+    if: always() && needs.publish.result != 'skipped'
+    runs-on: ubuntu-latest
+    environment: publish
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: publish-record-${{ github.run_id }}
+      - name: Render
+        id: render
+        run: |
+          jq -r --arg outcome "${{ needs.publish.result }}" '
+            def pkgs: [.packages[] | select(test("-debug-")|not)] | join(", ");
+            "### Publish " + (if $outcome=="success" then "succeeded" else "FAILED" end) +
+            " → **" + .target + "**" + (if .target!="live" then " (proof prefix, not live)" else "" end),
+            "",
+            (.slots[] | "- `" + .mirror + "/" + .arch + "`: " + (if .status=="published" then "" else "**" + .status + "** " end) + pkgs),
+            "",
+            (if (.plan|length) > (.slots|length) then "_Some planned slots did not run because an earlier slot failed._\n" else "" end),
+            "Commit " + .commit[0:7] + " · [run](" + .run + ")"
+          ' publish-record.json > comment.md
+          cat comment.md
+      - name: Comment on the merged PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pr=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" --jq '.[0].number // empty')
+          if [[ -n "$pr" ]]; then
+            gh pr comment "$pr" -R "${{ github.repository }}" --body-file comment.md
+            echo "commented on #$pr"
+          else
+            echo "no PR for ${{ github.sha }} (manual dispatch?); skipping PR comment"
+          fi
+      - name: Append to the publish log in the bucket
+        env:
+          RCLONE_CONFIG_R2_TYPE: s3
+          RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+          RCLONE_CONFIG_R2_NO_CHECK_BUCKET: "true"
+          RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          RCLONE_CONFIG_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+        run: |
+          curl -fsSL https://downloads.rclone.org/rclone-current-linux-amd64.zip -o rclone.zip && unzip -jq rclone.zip '*/rclone' && chmod +x rclone
+          # One JSON object per line, newest last. Served at
+          # https://pkgs.omarchy.org/publish-log.jsonl
+          ./rclone copy R2:omarchy-pkgs/publish-log.jsonl . --s3-no-head 2>/dev/null || : > publish-log.jsonl
+          jq -c . publish-record.json >> publish-log.jsonl
+          ./rclone copyto publish-log.jsonl R2:omarchy-pkgs/publish-log.jsonl --s3-no-head
+          echo "log now has $(wc -l < publish-log.jsonl) entries"
 
   result:
     needs: [changes, publish]
