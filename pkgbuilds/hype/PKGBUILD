@@ -15,6 +15,7 @@ depends=(
   'qt6-base>=6.8'
   'qt6-declarative>=6.8'
   'qt6-multimedia'
+  'qt6-imageformats'
   'qt6-svg'
   'source-highlight'
   'zlib'
@@ -22,7 +23,7 @@ depends=(
 )
 makedepends=('gcc' 'git' 'make')
 # Pin the source until a tagged release is available.
-_commit=34475b239d0dacb6918f43734bb5557b624555e2
+_commit=204d22c39deaeeeda75d8c90ee011bb53053f524
 source=("git+$url.git#commit=$_commit")
 sha256sums=('SKIP')
 
