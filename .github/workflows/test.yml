@@ -1,8 +1,9 @@
 name: Tests
 
-# PR-only. Branch protection requires PRs to be up to date with master, so
-# the PR run already tested the exact tree that merges; a second run on the
-# merge commit would only repeat it. Publishing on push has its own workflow.
+# PR-only. Publishing on push has its own workflow and is what verifies the
+# merged tree: it resolves every package against the live channel and refuses
+# a filename that already exists with different bytes, so two PRs cannot land
+# the same version twice. A post-merge test run would only repeat the PR's.
 on:
   pull_request:
   workflow_dispatch:
