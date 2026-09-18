@@ -110,6 +110,17 @@ jobs:
                 jq -nc --arg p "$package" --arg a "$arch" '{package:$p, arch:$a, source:"artifact-download-failed"}' >> sources.jsonl; failed=1; break
               fi
             else
+              # bin/build plans against the public channel first. If the
+              # channel already holds master's version there is nothing to
+              # build and nothing to publish: a re-run for a package that
+              # turned out to be fine. Record it and move on.
+              plan=$(CONTAINER_ENGINE=docker bin/build --dry-run --mirror edge --arch "$arch" --package "$package" 2>&1 | grep -E '^==> Plan complete' || true)
+              # "Packages that would build:" followed by nothing means none.
+              if [[ -n "$plan" && -z "$(sed -E 's/.*would build: *//' <<<"$plan" | tr -d '[:space:]')" ]]; then
+                echo "==> $label: already published at master's version, nothing to do"
+                jq -nc --arg p "$package" --arg a "$arch" '{package:$p, arch:$a, source:"already-published"}' >> sources.jsonl
+                continue
+              fi
               echo "==> $label: no artifact for this tree, building"
               if OMARCHY_KEEP_BUILD_WORKSPACE=1 bin/build --mirror edge --arch "$arch" --package "$package"; then
                 jq -nc --arg p "$package" --arg a "$arch" '{package:$p, arch:$a, source:"built"}' >> sources.jsonl
@@ -147,6 +158,16 @@ jobs:
         # builder image (host-native, edge) with the workspace mounted.
         run: |
           set -euo pipefail
+          if ! compgen -G "build-output/edge/*/*.pkg.tar.zst" >/dev/null; then
+            echo "Nothing to publish: every requested package is already published at master's version."
+            jq -n --arg sha "${{ github.sha }}" --arg run "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+              --arg prefix "${OMARCHY_PUBLISH_PREFIX:-}" --arg event "${{ github.event_name }}" \
+              --slurpfile sources sources.jsonl --slurpfile plan <(jq -c '.include[]' <<<'${{ needs.changes.outputs.matrix }}' | jq -sc .) \
+              '{time: (now|todate), commit:$sha, run:$run, event:$event, target: (if $prefix=="" then "live" else $prefix end), plan:$plan[0], sources:$sources, slots:[]}' \
+              > publish-record.json
+            cat publish-record.json
+            exit 0
+          fi
           docker image inspect omarchy-pkg-builder:latest-x86_64-edge >/dev/null 2>&1 \
             || docker buildx build --load -t omarchy-pkg-builder:latest-x86_64-edge --build-arg MIRROR=edge build
 
@@ -241,13 +262,15 @@ jobs:
         run: |
           jq -r --arg outcome "${{ needs.publish.result }}" '
             def pkgs: [.packages[] | select(test("-debug-")|not)] | join(", ");
-            def src: if .source=="pr-artifact" then "PR artifact" elif .source=="built" then "built here" else "**" + .source + "**" end;
+            def src: if .source=="pr-artifact" then "PR artifact" elif .source=="built" then "built here" elif .source=="already-published" then "already published, skipped" else "**" + .source + "**" end;
             "### Publish " + (if $outcome=="success" then "succeeded" else "FAILED" end) +
             " → **" + .target + "**" + (if .target!="live" then " (proof prefix, not live)" else "" end),
             "",
             "Packages: " + ([.sources[] | .package + " (" + .arch + ", " + src + ")"] | join("; ")),
             "",
-            (if (.slots|length) > 0 then (.slots[] | "- `" + .mirror + "/" + .arch + "`: " + (if .status=="published" then "" else "**" + .status + "** " end) + pkgs) else "_Nothing was published._" end),
+            (if (.slots|length) > 0 then (.slots[] | "- `" + .mirror + "/" + .arch + "`: " + (if .status=="published" then "" else "**" + .status + "** " end) + pkgs)
+             elif ([.sources[] | select(.source=="already-published")] | length) == (.sources|length) then "_Nothing to publish: already at master'"'"'s version everywhere._"
+             else "_Nothing was published._" end),
             "",
             (if ([.sources[] | select(.source|test("failed"))] | length) > 0 then "_A build failed, so no channel was touched._\n"
              elif (.plan|length) > (.slots|length) then "_Some planned slots did not run because an earlier slot failed._\n" else "" end),
