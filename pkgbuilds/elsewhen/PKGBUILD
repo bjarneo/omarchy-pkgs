@@ -1,7 +1,7 @@
 # Maintainer: Spencer Bull <spencer.bull@hey.com>
 
 pkgname=elsewhen
-pkgver=0.1.0
+pkgver=1.0.0
 pkgrel=1
 pkgdesc='World clock plugin for the Omarchy shell'
 arch=('any')
@@ -21,11 +21,7 @@ depends=(
 options=('!debug')
 
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-# Fill once the v0.1.0 tag exists:
-#   curl -fsSL https://github.com/omacom/elsewhen/archive/refs/tags/v0.1.0.tar.gz | sha256sum
-# bin/sync-upstream rewrites this array only when it moves pkgver forward, so
-# the first release's digest has to be entered by hand.
-sha256sums=('FILL_FROM_RELEASE_ARCHIVE')
+sha256sums=('3124f0c0a19ebc1b158bcf04151cddd6c733ceeead88052186b6a54c46bee263')
 
 package() {
   # The packaged plugin root, scanned by the shell between its bundled
