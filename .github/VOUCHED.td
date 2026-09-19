@@ -11,5 +11,12 @@
 #   -github:username reason for denouncement
 #
 # Keep entries sorted alphabetically.
+github:bjarneo
+github:dhh
 github:f-trycua
+github:HANCORE-linux
+github:kwilczynski
+github:ryanrhughes
 github:scottjones
+github:spencerbull
+github:tobi
