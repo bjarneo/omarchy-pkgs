@@ -31,6 +31,15 @@ mkdir -p "$T/old" "$T/out2"; cp "$T/built"/*.pkg.tar.zst "$T/old/"
 unpack_packages "$T/old" "$T/out2" && [[ "$(ls "$T/out2" | sort | tr '\n' ' ')" == "$PLAIN $EPOCH " ]] \
   && pass "a bare pre-packing artifact still unpacks" || fail "bare artifact"
 
+# The workflows call these bare under `bash -e`, so any non-zero status
+# inside them ends the step. (The first version used `shopt -p nullglob`,
+# which exits 1 when the option is off; the tests above never saw it because
+# `||` suppresses errexit.)
+mkdir -p "$T/out4" "$T/out5"
+bash -e -c "source '$ROOT/helpers/artifact-helpers.sh'; pack_packages '$T/built' '$T/out4/packages.tar'; tar -tf '$T/out4/packages.tar' >/dev/null; unpack_packages '$T/out4' '$T/out5'" \
+  && [[ "$(ls "$T/out5" | sort | tr '\n' ' ')" == "$PLAIN $EPOCH " ]] \
+  && pass "pack and unpack succeed under bash -e, as the workflows call them" || fail "bash -e"
+
 mkdir -p "$T/empty"
 if pack_packages "$T/empty" "$T/x.tar" 2>/dev/null; then fail "packing an empty build dir should fail"; else pass "empty build dir refused"; fi
 if unpack_packages "$T/empty" "$T/out3" 2>/dev/null; then fail "an empty artifact should fail"; else pass "empty artifact refused"; fi

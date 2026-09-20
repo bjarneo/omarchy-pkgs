@@ -5,14 +5,24 @@
 # makepkg. So the files ride inside a tar with a plain name and keep their
 # own names untouched: pacman clients and bin/publish-artifact both rely on
 # the filename matching PKGINFO.
+#
+# Both functions run under the workflow's `bash -e`: nothing in them may
+# return non-zero except the final failure.
 
-# pack_packages <dir> <tar>: every *.pkg.tar.zst directly in <dir> into <tar>.
-# Signatures and the scratch database next to them stay behind.
+# package_files <dir>: the *.pkg.tar.zst directly in <dir>, one per line.
+# Signatures and the scratch database next to them are not packages.
+package_files() {
+  local f
+  for f in "$1"/*.pkg.tar.zst; do
+    [[ -e "$f" ]] && printf '%s\n' "$f"
+  done
+  return 0
+}
+
+# pack_packages <dir> <tar>: every package in <dir> into <tar>.
 pack_packages() {
-  local dir=$1 out=$2 restore files=()
-  restore=$(shopt -p nullglob); shopt -s nullglob
-  files=("$dir"/*.pkg.tar.zst)
-  $restore
+  local dir=$1 out=$2 files=()
+  mapfile -t files < <(package_files "$dir")
   (( ${#files[@]} )) || { echo "pack_packages: no *.pkg.tar.zst in $dir" >&2; return 1; }
   tar -cf "$out" -C "$dir" -- "${files[@]##*/}"
 }
@@ -22,15 +32,13 @@ pack_packages() {
 # builds before packing hold the bare files. The bare form can go once
 # those artifacts have expired (7-day retention).
 unpack_packages() {
-  local src=$1 dest=$2 restore files=()
+  local src=$1 dest=$2 files=()
   mkdir -p "$dest"
   if [[ -f "$src/packages.tar" ]]; then
     tar -xf "$src/packages.tar" -C "$dest"
-    return
+    return 0
   fi
-  restore=$(shopt -p nullglob); shopt -s nullglob
-  files=("$src"/*.pkg.tar.zst)
-  $restore
+  mapfile -t files < <(package_files "$src")
   (( ${#files[@]} )) || { echo "unpack_packages: nothing to unpack in $src" >&2; return 1; }
   cp -- "${files[@]}" "$dest/"
 }
