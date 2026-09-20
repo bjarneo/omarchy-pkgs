@@ -38,11 +38,11 @@ jobs:
       vouch_status: ${{ steps.vouch.outputs.status }}
       empty: ${{ steps.list.outputs.empty }}
     steps:
-      # Same rule as the build job: bin/build-matrix comes from base, the
-      # package directories from the PR head.
+      # Same rule as the build job: bin/build-matrix comes from the base
+      # branch tip, the package directories from the PR head.
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          ref: ${{ github.event.pull_request.base.ref || github.sha }}
           fetch-depth: 0
           persist-credentials: false
       - if: github.event_name == 'pull_request'
@@ -146,9 +146,13 @@ jobs:
       # gets built, never how the runner builds it. A PR that changes both
       # tooling and a package builds the package with the OLD tooling; land
       # the tooling first. workflow_dispatch has no PR and runs as checked out.
+      # The base branch tip, not the event's base.sha: that sha is a snapshot
+      # taken at the PR's last push, so a tooling fix on master would never
+      # reach an open PR until someone pushed to it (seen on the daily sync
+      # PR after the artifact packing fix landed).
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          ref: ${{ github.event.pull_request.base.ref || github.sha }}
           persist-credentials: false
       - name: Overlay the PR's package directories onto base tooling
         if: github.event_name == 'pull_request'
