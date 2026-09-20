@@ -834,6 +834,8 @@ package-builder pool. Each candidate must pass `tests/build-isolation.sh`,
 including real package builds, before publication to
 `ghcr.io/omacom/omarchy-pkg-builder`. Only `master` in this repository can
 publish; PR workflows cannot replace the shared images.
+PRs that change image inputs also build and test both candidates on native
+runners, with a read-only token and no registry publication.
 
 The compatibility tag contains the architecture, mirror, and a hash of the
 entire `build/` context, including executable bits and symlink targets but

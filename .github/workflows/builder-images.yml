@@ -13,16 +13,52 @@ on:
       - tests/build-isolation.sh
       - .github/workflows/builder-images.yml
   workflow_dispatch:
+  pull_request:
+    paths:
+      - build/**
+      - bin/builder-image
+      - helpers/paths.sh
+      - helpers/docker-helpers.sh
+      - tests/build-isolation.sh
+      - .github/workflows/builder-images.yml
 
 # Complete each refresh before another can replace its tested image tags.
 concurrency:
-  group: builder-images
+  group: builder-images-${{ github.event.pull_request.number || 'master' }}
   cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
+  # Exercise proposed image changes on native runners with a read-only token.
+  # Publishing is a separate master-only job with its own write permission.
+  validate:
+    if: github.event_name == 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-24.04
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    env:
+      CONTAINER_ENGINE: docker
+      CANDIDATE_IMAGE: omarchy-builder-candidate:${{ matrix.arch }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build a fresh environment
+        run: bin/builder-image build --arch "${{ matrix.arch }}" --mirror edge --tag "$CANDIDATE_IMAGE" --fresh
+      - name: Test isolated package builds
+        env:
+          TEST_BUILDER_IMAGE: ${{ env.CANDIDATE_IMAGE }}
+        run: tests/build-isolation.sh
+
   refresh:
     if: github.repository == 'omacom/omarchy-pkgs' && github.ref == 'refs/heads/master'
     strategy:
