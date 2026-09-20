@@ -845,8 +845,11 @@ The repository includes GitHub workflows and systemd services for automated rele
 2. **sync-rebuilds.yml** (Every 6 hours): Bumps pkgrel for packages whose `rebuild_on` dependencies have moved in the official repositories and opens a PR.
 
 To approve builds for an unvouched contributor's PR, apply **`build-approved`**.
-This triggers a package build and automatically releases GitHub's pending
-build and test workflows for that PR's current commit. The approval workflow
+Until approval, the PR shows **Awaiting build approval** and its required
+`result` check stays pending, keeping the PR blocked from merging without
+reporting a failed build. Actual build failures and denouncements still fail.
+Applying the label triggers a package build and automatically releases GitHub's
+pending build and test workflows for that PR's current commit. The approval workflow
 runs only trusted default-branch code; package builds and tests stay in the
 ordinary PR workflows. It may take a few minutes for GitHub to register and
 release all the runs.

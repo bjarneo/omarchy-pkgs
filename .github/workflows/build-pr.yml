@@ -7,9 +7,9 @@ name: Build changed packages
 # Tooling runs from the base branch; a PR supplies only pkgbuilds/. The
 # vouch gate limits who may spend compute; this limits what their PR can run.
 
-# No paths filter: `result` is the required status check, so it has to be
-# reported on every PR. A PR that touches no package directory gets an empty
-# matrix and a passing result in seconds.
+# No paths filter: approved PRs must report the required `result` even when
+# no package directory changed. Those PRs get an empty matrix and a passing
+# result in seconds; unapproved PRs wait for maintainer approval.
 on:
   pull_request:
     types: [opened, synchronize, reopened, labeled]
@@ -28,13 +28,14 @@ jobs:
   # collaborators, anyone in .github/VOUCHED.td (read from the default
   # branch, so a PR cannot vouch for itself), or a PR a maintainer has
   # labelled "build-approved". Everyone else gets this job's plan output
-  # and a failing `result` until a maintainer approves the build.
+  # while the required `result` stays pending until a maintainer approves.
   changes:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.list.outputs.matrix }}
       count: ${{ steps.gate.outputs.count }}
       trusted: ${{ steps.gate.outputs.trusted }}
+      vouch_status: ${{ steps.vouch.outputs.status }}
       empty: ${{ steps.list.outputs.empty }}
     steps:
       # Same rule as the build job: bin/build-matrix comes from base, the
@@ -178,26 +179,36 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # The one required status check. Matrix job names carry the package name, so
-  # they cannot be listed in branch protection; this job's name is stable and
-  # it fails if any package failed. It also runs (and passes) when no package
-  # changed, so tooling-only PRs are not stuck waiting for a status.
+  # `result` is required by branch protection. An unvouched author awaiting
+  # approval gets a differently named informational check, leaving `result`
+  # unreported (pending). Skipping or passing a job named `result` would count
+  # as satisfying the requirement even though no build was authorized.
+  # Actual planning/build failures and denouncements still report `result`.
   result:
+    name: ${{ needs.changes.result == 'success' && needs.changes.outputs.trusted == 'false' && needs.changes.outputs.vouch_status == 'unknown' && needs.changes.outputs.empty == 'false' && 'Awaiting build approval' || 'result' }}
     needs: [changes, build]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - run: |
           echo "trusted=${{ needs.changes.outputs.trusted }} build=${{ needs.build.result }}"
-          # An untrusted author's PR fails until a maintainer vouches or labels it.
-          if [[ "${{ needs.changes.outputs.trusted }}" != "true" ]]; then
-            echo "::error::Builds were not run: author is not vouched. Add to .github/VOUCHED.td or apply the 'build-approved' label."
+          if [[ "${{ needs.changes.result }}" != "success" ]]; then
+            echo "::error::Build planning or the trust check failed. See the changes job."
             exit 1
           fi
           # Nothing to merge: the PR's diff against its base is empty. Its
           # change already landed elsewhere. Close it rather than merge it.
           if [[ "${{ needs.changes.outputs.empty }}" == "true" ]]; then
             echo "::error::This PR changes no files relative to its base. Its content is already on the target branch; close it instead of merging."
+            exit 1
+          fi
+          if [[ "${{ needs.changes.outputs.trusted }}" == "false" && "${{ needs.changes.outputs.vouch_status }}" == "unknown" && "${{ needs.changes.outputs.empty }}" == "false" ]]; then
+            echo "::notice::Awaiting maintainer build approval. Apply 'build-approved' to this PR or vouch for the author in .github/VOUCHED.td."
+            echo "Package builds are waiting for maintainer approval. Apply **build-approved** to this PR to start them. The required **result** check remains pending." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if [[ "${{ needs.changes.outputs.trusted }}" != "true" ]]; then
+            echo "::error::Builds are blocked: the author is denounced or the trust result is invalid. The build-approved label cannot override this."
             exit 1
           fi
           [[ "${{ needs.build.result }}" == "success" || "${{ needs.build.result }}" == "skipped" ]]

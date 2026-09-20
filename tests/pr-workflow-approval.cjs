@@ -1,8 +1,9 @@
 const assert = require('node:assert/strict');
-const { readFileSync } = require('node:fs');
+const { readFileSync, mkdtempSync, rmSync } = require('node:fs');
 const { join } = require('node:path');
+const { tmpdir } = require('node:os');
 const { test } = require('node:test');
-const { execFileSync } = require('node:child_process');
+const { execFileSync, spawnSync } = require('node:child_process');
 const approve = require('../.github/scripts/approve-pr-workflows.cjs');
 
 const BUILD = '.github/workflows/build-pr.yml';
@@ -240,3 +241,74 @@ test('the build gate permits a missing vouch only with approval, never a denounc
     }), expected);
   }
 });
+
+// Exercise the actual reporting job, including its GitHub check name: a
+// successful/skipped check called "result" would accidentally allow merging
+// a PR whose build never ran. GitHub keeps a missing required check pending.
+const resultJob = workflow.slice(workflow.indexOf('\n  result:\n'));
+const resultName = resultJob.match(/^    name: (.+)$/m)[1];
+const resultScript = resultJob.split('      - run: |\n')[1];
+function report({ trusted = 'false', vouch = 'unknown', empty = 'false', changes = 'success', build = 'skipped' } = {}) {
+  const needs = {
+    changes: { result: changes, outputs: { trusted, vouch_status: vouch, empty } },
+    build: { result: build },
+  };
+  // The reporting expressions use &&, || and string equality, with the
+  // same semantics in JavaScript and Actions for these string-only fixtures.
+  const render = text => text.replace(/\$\{\{(.*?)\}\}/g, (_, expression) =>
+    new Function('needs', `return (${expression})`)(needs));
+  const directory = mkdtempSync(join(tmpdir(), 'build-approval-report-'));
+  const summaryPath = join(directory, 'summary');
+  try {
+    const result = spawnSync('bash', ['-e', '-c', render(resultScript)], {
+      env: { ...process.env, GITHUB_STEP_SUMMARY: summaryPath }, encoding: 'utf8',
+    });
+    return { name: render(resultName), ...result,
+      summary: result.stdout.includes('::notice::') ? readFileSync(summaryPath, 'utf8') : '' };
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+}
+
+test('an unvouched PR waits without publishing a passing or failing required result', () => {
+  const result = report();
+  assert.equal(result.name, 'Awaiting build approval');
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /::notice::Awaiting maintainer build approval/);
+  assert.doesNotMatch(result.stdout, /::error::/);
+  assert.match(result.summary, /required \*\*result\*\* check remains pending/);
+});
+
+test('applying build-approved transitions the waiting PR to the required build result', () => {
+  assert.notEqual(report().name, 'result');
+  const approved = report({ trusted: 'true', build: 'success' });
+  assert.equal(approved.name, 'result');
+  assert.equal(approved.status, 0);
+  const failed = report({ trusted: 'true', build: 'failure' });
+  assert.equal(failed.name, 'result');
+  assert.notEqual(failed.status, 0);
+});
+
+test('trusted tooling-only PRs still satisfy the required result without a package build', () => {
+  const result = report({ trusted: 'true', vouch: 'vouched' });
+  assert.equal(result.name, 'result');
+  assert.equal(result.status, 0);
+});
+
+for (const [name, overrides] of [
+  ['denounced author', { vouch: 'denounced' }],
+  ['failed trust lookup', { vouch: '', changes: 'failure' }],
+  ['missing trust result', { vouch: '' }],
+  ['missing gate output', { trusted: '' }],
+  ['failed planning', { changes: 'failure' }],
+  ['cancelled planning', { changes: 'cancelled' }],
+  ['empty PR', { empty: 'true' }],
+  ['cancelled build', { trusted: 'true', build: 'cancelled' }],
+]) {
+  test(`${name} fails the required result instead of masquerading as pending approval`, () => {
+    const result = report(overrides);
+    assert.equal(result.name, 'result');
+    assert.notEqual(result.status, 0);
+    assert.doesNotMatch(result.stdout, /::notice::Awaiting maintainer build approval/);
+  });
+}
