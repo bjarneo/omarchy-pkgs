@@ -35,6 +35,9 @@ jobs:
       - name: Test PR workflow approval
         run: node --test tests/pr-workflow-approval.cjs
 
+      - name: Test builder images
+        run: node --test tests/builder-image.cjs
+
       # An Arch container for vercmp: version ordering has to be decided by
       # the same comparator pacman uses on users' machines.
       - name: Run self-tests
