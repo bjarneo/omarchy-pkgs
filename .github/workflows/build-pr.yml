@@ -170,12 +170,22 @@ jobs:
       - name: Tree hash
         id: tree
         run: echo "hash=$(git rev-parse "${{ github.event.pull_request.head.sha || github.sha }}:pkgbuilds/${{ matrix.package }}")" >> "$GITHUB_OUTPUT"
-      - name: Upload artifact
+      # The upload action rejects a path containing ':', which is how makepkg
+      # names a package with an epoch. The files ride inside packages.tar
+      # (helpers/artifact-helpers.sh); publish.yml unpacks it.
+      - name: Pack artifact
+        id: pack
         if: always()
+        run: |
+          source helpers/artifact-helpers.sh
+          pack_packages build-output/edge/${{ matrix.arch }} packages.tar
+          tar -tvf packages.tar
+      - name: Upload artifact
+        if: always() && steps.pack.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.package }}-${{ matrix.arch }}-${{ steps.tree.outputs.hash }}
-          path: build-output/edge/${{ matrix.arch }}/*.pkg.tar.zst
+          path: packages.tar
           if-no-files-found: error
           retention-days: 7
 
