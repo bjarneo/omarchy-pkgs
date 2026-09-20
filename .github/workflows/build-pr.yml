@@ -28,8 +28,7 @@ jobs:
   # collaborators, anyone in .github/VOUCHED.td (read from the default
   # branch, so a PR cannot vouch for itself), or a PR a maintainer has
   # labelled "build-approved". Everyone else gets this job's plan output
-  # and a passing `result`, which is enough for a maintainer to review
-  # before deciding to spend the compute.
+  # and a failing `result` until a maintainer approves the build.
   changes:
     runs-on: ubuntu-latest
     outputs:
@@ -64,6 +63,19 @@ jobs:
           allow-fail: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - id: approval
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo, pull_number: context.payload.pull_request.number,
+            });
+            // Approving or rerunning a held run keeps its original event,
+            // which may predate the label. Read the current approval instead.
+            core.setOutput('approved', pr.state === 'open' &&
+              pr.head.sha === context.payload.pull_request.head.sha &&
+              pr.labels.some(label => label.name === 'build-approved'));
       # One matrix entry per package per architecture. Every package builds
       # once, against edge; the channels it ships to on merge are carried
       # along for information. A filename means one set of bytes.
@@ -92,16 +104,17 @@ jobs:
           fi
       - id: gate
         env:
-          STATUS: ${{ steps.vouch.outputs.status || 'dispatch' }}
+          STATUS: ${{ github.event_name == 'workflow_dispatch' && 'dispatch' || steps.vouch.outputs.status }}
           AUTHOR: ${{ github.event.pull_request.user.login }}
-          APPROVED: ${{ contains(github.event.pull_request.labels.*.name, 'build-approved') }}
+          APPROVED: ${{ steps.approval.outputs.approved || 'false' }}
           PLANNED: ${{ steps.list.outputs.planned }}
         run: |
           case "$STATUS" in
             bot|collaborator|vouched|dispatch) trusted=true ;;
             # A denouncement is absolute: the label cannot override it.
             denounced) trusted=false ;;
-            *) trusted=$APPROVED ;;
+            unknown) trusted=$APPROVED ;;
+            *) trusted=false ;;
           esac
           echo "trusted=$trusted" >> "$GITHUB_OUTPUT"
           if [[ $trusted == true ]]; then
@@ -176,8 +189,7 @@ jobs:
     steps:
       - run: |
           echo "trusted=${{ needs.changes.outputs.trusted }} build=${{ needs.build.result }}"
-          # An untrusted author's PR is held, not failed: the required check
-          # stays pending until a maintainer vouches or labels it.
+          # An untrusted author's PR fails until a maintainer vouches or labels it.
           if [[ "${{ needs.changes.outputs.trusted }}" != "true" ]]; then
             echo "::error::Builds were not run: author is not vouched. Add to .github/VOUCHED.td or apply the 'build-approved' label."
             exit 1

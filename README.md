@@ -844,6 +844,19 @@ The repository includes GitHub workflows and systemd services for automated rele
 1. **sync-upstream.yml** (Every 6 hours): Watches direct upstream feeds and updates owned recipes. Successful package updates reach a PR even if another feed fails; failed recipes stay untouched and the workflow remains red.
 2. **sync-rebuilds.yml** (Every 6 hours): Bumps pkgrel for packages whose `rebuild_on` dependencies have moved in the official repositories and opens a PR.
 
+To approve builds for an unvouched contributor's PR, apply **`build-approved`**.
+This triggers a package build and automatically releases GitHub's pending
+build and test workflows for that PR's current commit. The approval workflow
+runs only trusted default-branch code; package builds and tests stay in the
+ordinary PR workflows. It may take a few minutes for GitHub to register and
+release all the runs.
+
+The label stays effective for that PR while attached, including later commits;
+it does not vouch for the author's other PRs. Removing it stops further label
+approvals, but does not cancel runs already released. An explicit denouncement
+in `.github/VOUCHED.td` still blocks builds. If the approval workflow times out,
+remove and reapply the label to retry.
+
 #### Systemd Services
 
 All four units run **every 5 minutes**, staggered by a minute each, so a push
