@@ -2,7 +2,7 @@
 # Maintainer: Tom Ballard (tcballard)
 pkgname=omarchy-task-manager
 pkgver=0.0.3
-pkgrel=1
+pkgrel=2
 url='https://github.com/tcballard/omarchy-task-manager'
 pkgdesc='Floating native task manager for Omarchy (preview)'
 arch=('x86_64')
@@ -11,8 +11,16 @@ depends=('qt6-base' 'qt6-declarative' 'qt6-wayland' 'qt6-svg' 'hicolor-icon-them
 optdepends=('gdb: live process core dumps' 'nvidia-utils: NVIDIA device telemetry')
 makedepends=('cmake' 'ninja' 'rust' 'cargo')
 checkdepends=('python' 'desktop-file-utils')
-source=("$url/releases/download/v$pkgver/$pkgname-$pkgver.tar.gz")
-sha256sums=('cc3e24a0bb8fad2b7ce0d4fb780aa774d32b53b8de924b488b55674bdb936c85')
+source=("$url/releases/download/v$pkgver/$pkgname-$pkgver.tar.gz"
+        "pause-resume-test.patch")
+sha256sums=('cc3e24a0bb8fad2b7ce0d4fb780aa774d32b53b8de924b488b55674bdb936c85'
+            'ee97d57fed9f9d8b542b934f177560c8a6f0801642767d4d0787a183deafd09a')
+
+# Backport the test observation fix from upstream PR #11.
+prepare() {
+  cd "$srcdir/$pkgname-$pkgver"
+  patch -Np1 -i "$srcdir/pause-resume-test.patch"
+}
 
 build() {
   cmake -S "$srcdir/$pkgname-$pkgver" -B build -G Ninja \
