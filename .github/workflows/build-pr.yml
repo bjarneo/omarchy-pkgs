@@ -81,6 +81,8 @@ jobs:
       # once, against edge; the channels it ships to on merge are carried
       # along for information. A filename means one set of bytes.
       - id: list
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [[ -n "${{ github.event.inputs.packages }}" ]]; then
             names="${{ github.event.inputs.packages }}"
@@ -89,6 +91,29 @@ jobs:
               | awk -F/ '$1=="pkgbuilds" && NF>2 {print $2}' | sort -u)
           fi
           matrix=$(printf '%s\n' $names | bin/build-matrix)
+          # A package directory whose exact tree already has a build artifact
+          # (label <pkg>-<arch>-<tree hash>, uploaded only after a successful
+          # build) is not built again. Pushing a fix for one package to a PR
+          # that touches fifty rebuilds one, not fifty; publish.yml finds the
+          # same artifacts on merge. workflow_dispatch is an explicit request
+          # and always builds.
+          if [[ "${{ github.event_name }}" == pull_request ]]; then
+            head="${{ github.event.pull_request.head.sha }}"
+            kept=(); reused=()
+            while read -r entry; do
+              package=$(jq -r .package <<<"$entry"); arch=$(jq -r .arch <<<"$entry")
+              label="$package-$arch-$(git rev-parse "$head:pkgbuilds/$package")"
+              found=$(curl -fsS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+                "https://api.github.com/repos/${{ github.repository }}/actions/artifacts?name=$label&per_page=5" \
+                | jq -r '[.artifacts[] | select(.expired|not)] | length' || echo 0)
+              if (( found > 0 )); then reused+=("$label"); else kept+=("$entry"); fi
+            done < <(jq -c '.include[]' <<<"$matrix")
+            matrix=$(printf '%s\n' "${kept[@]}" | jq -sc '{include: .}')
+            if (( ${#reused[@]} )); then
+              printf '==> already built, reusing the artifact: %s\n' "${reused[@]}"
+              { echo "Reused existing build artifacts (${#reused[@]}):"; printf -- '- %s\n' "${reused[@]}"; } >> "$GITHUB_STEP_SUMMARY"
+            fi
+          fi
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
           echo "planned=$(jq '.include | length' <<<"$matrix")" >> "$GITHUB_OUTPUT"
           jq -r '.include[] | "\(.package) \(.arch) -> \(.channels)"' <<<"$matrix"
@@ -163,6 +188,7 @@ jobs:
           echo "tooling: $(git rev-parse --short HEAD) (base)  packages: ${{ github.event.pull_request.head.sha }} (PR head)"
           git status --short | head
       - name: Build ${{ matrix.package }} (${{ matrix.arch }}, ships to ${{ matrix.channels }})
+        id: build
         env:
           CONTAINER_ENGINE: docker
         run: bin/build --mirror edge --arch ${{ matrix.arch }} --package ${{ matrix.package }}
@@ -176,16 +202,16 @@ jobs:
         run: echo "hash=$(git rev-parse "${{ github.event.pull_request.head.sha || github.sha }}:pkgbuilds/${{ matrix.package }}")" >> "$GITHUB_OUTPUT"
       # The upload action rejects a path containing ':', which is how makepkg
       # names a package with an epoch. The files ride inside packages.tar
-      # (helpers/artifact-helpers.sh); publish.yml unpacks it.
+      # (helpers/artifact-helpers.sh); publish.yml unpacks it. Only a
+      # successful build uploads: the artifact's existence is what lets the
+      # planner above and publish.yml skip rebuilding this exact tree.
       - name: Pack artifact
         id: pack
-        if: always()
         run: |
           source helpers/artifact-helpers.sh
           pack_packages build-output/edge/${{ matrix.arch }} packages.tar
           tar -tvf packages.tar
       - name: Upload artifact
-        if: always() && steps.pack.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.package }}-${{ matrix.arch }}-${{ steps.tree.outputs.hash }}
