@@ -2,7 +2,7 @@
 
 pkgname=flea
 pkgver=0.3.1
-pkgrel=1
+pkgrel=2
 pkgdesc='Fast, keyboard-first file manager for Omarchy'
 arch=('x86_64' 'aarch64')
 url='https://github.com/thisisgm/flea'
@@ -64,7 +64,13 @@ build() {
 check() {
   cd "$pkgname-$pkgver"
 
-  export CARGO_TARGET_DIR=target
+  # Upstream's release profile uses fat LTO, whose final link runs on one
+  # thread. build() keeps it for the shipped binary; the test harness is a
+  # throwaway second compile, so build it in parallel in its own target
+  # directory.
+  export CARGO_TARGET_DIR=target-check
+  export CARGO_PROFILE_RELEASE_LTO=thin
+  export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16
 
   local -a test_args=()
   if ! /usr/bin/prlimit --cpu=30 --as=1073741824 \
